@@ -21,9 +21,10 @@ function fwd(prefix) {
 }
 
 app.get('/ping', function(req, res) { res.json({ ok: true, port: PORT }); });
-app.use('/api', fwd('/api'));
+app.use('/api',    fwd('/api'));
+app.use('/static', fwd('/static'));
 app.use('/listen', fwd('/listen'));
-app.use('/key', fwd('/key'));
+app.use('/key',    fwd('/key'));
 app.get('/', function(req, res) { res.sendFile(path.join(__dirname, 'index.html')); });
 process.on('uncaughtException', function(e) { console.error('CRASH', e); });
 app.listen(PORT, function() { console.log('READY on port ' + PORT); });
