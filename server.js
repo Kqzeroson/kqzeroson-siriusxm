@@ -17,10 +17,7 @@ function proxyRequest(prefix) {
       res.writeHead(upstreamRes.statusCode, upstreamRes.headers);
       upstreamRes.pipe(res);
     });
-    proxy.on('error', err => {
-      console.error('[proxy error]', upstreamPath, err.message);
-      if (!res.headersSent) res.status(502).end('upstream error');
-    });
+    proxy.on('error', err => { console.error('[proxy]', upstreamPath, err.message); if (!res.headersSent) res.status(502).end('upstream error'); });
     req.pipe(proxy);
   };
 }
@@ -30,12 +27,6 @@ app.use('/listen', proxyRequest('/listen'));
 app.use('/key',    proxyRequest('/key'));
 app.use('/stream', proxyRequest('/stream'));
 app.use('/static', proxyRequest('/static'));
-
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 process.on('uncaughtException', e => console.error('[crash]', e.message));
-
-app.listen(PORT, () => {
-  console.log('');
-  console.log('  Kqzeroson SiriusXM WebPlayer -> http://localhost:' + PORT);
-  console.log('');
-});
+app.listen(PORT, () => console.log('Kqzeroson SiriusXM WebPlayer on port ' + PORT));
