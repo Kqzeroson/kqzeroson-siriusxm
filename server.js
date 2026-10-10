@@ -3,29 +3,27 @@ const http = require('http');
 const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
-const HOST = 'june.hidencloud.com';
-const HPORT = 24709;
 
-function proxy(prefix) {
-  return (req, res) => {
-    const upPath = prefix + req.url;
-    const hdrs = Object.assign({}, req.headers);
-    hdrs['host'] = HOST + ':' + HPORT;
+function fwd(prefix) {
+  return function(req, res) {
+    var upPath = prefix + req.url;
+    var hdrs = Object.assign({}, req.headers);
+    hdrs['host'] = 'june.hidencloud.com:24709';
     delete hdrs['accept-encoding'];
-    console.log('[proxy]', req.method, upPath);
-    const pr = http.request({ hostname: HOST, port: HPORT, path: upPath, method: req.method, headers: hdrs }, ur => {
+    var opts = { hostname: 'june.hidencloud.com', port: 24709, path: upPath, method: req.method, headers: hdrs };
+    var pr = http.request(opts, function(ur) {
       res.writeHead(ur.statusCode, ur.headers);
       ur.pipe(res);
     });
-    pr.on('error', e => { console.error('[err]', upPath, e.message); if (!res.headersSent) res.status(502).end('error'); });
+    pr.on('error', function(e) { console.error('proxy err', e.message); if (!res.headersSent) { res.statusCode = 502; res.end('error'); } });
     req.pipe(pr);
   };
 }
 
-app.get('/ping', (req, res) => res.json({ ok: true, port: PORT }));
-app.use('/api',    proxy('/api'));
-app.use('/listen', proxy('/listen'));
-app.use('/key',    proxy('/key'));
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-process.on('uncaughtException', e => console.error('[crash]', e.message));
-app.listen(PORT, () => console.log('[ready] port=' + PORT));
+app.get('/ping', function(req, res) { res.json({ ok: true, port: PORT }); });
+app.use('/api', fwd('/api'));
+app.use('/listen', fwd('/listen'));
+app.use('/key', fwd('/key'));
+app.get('/', function(req, res) { res.sendFile(path.join(__dirname, 'index.html')); });
+process.on('uncaughtException', function(e) { console.error('CRASH', e); });
+app.listen(PORT, function() { console.log('READY on port ' + PORT); });
