@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kqzeroson's SiriusXM WebPlayer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <style>
+:root {
+    --primary:#7C3AED;--primary-light:#A78BFA;--primary-glow:rgba(124,58,237,0.35);
+    --accent:#06B6D4;--accent-warm:#F59E0B;
+    --bg-root:#060914;--bg-surface:#0D1226;--bg-card:#111827;--bg-card-hover:#1A2035;--bg-player:#08091A;
+    --text-primary:#F1F5F9;--text-secondary:#94A3B8;--text-muted:#475569;
+    --border:rgba(255,255,255,0.06);--border-hover:rgba(124,58,237,0.5);--border-playing:rgba(124,58,237,0.8);
+    --shadow-card:0 4px 24px rgba(0,0,0,0.45);
+    --shadow-hover:0 12px 40px rgba(0,0,0,0.55),0 0 0 1px rgba(124,58,237,0.18);
+    --shadow-playing:0 0 0 2px var(--primary),0 12px 40px var(--primary-glow);
+    --gradient-primary:linear-gradient(135deg,#7C3AED 0%,#DB2777 100%);
+    --gradient-background:linear-gradient(160deg,#060914 0%,#0D1226 50%,#100A20 100%);
+    --radius-card:18px;--radius-pill:50px;
+    --transition:all 0.28s cubic-bezier(0.4,0,0.2,1);
+    --player-height:100px;
+}
+[data-theme="light"]{--bg-root:#EEF2FF;--bg-surface:#E8EDF8;--bg-card:#FFFFFF;--bg-card-hover:#F8FAFF;--bg-player:rgba(248,250,255,0.97);--text-primary:#0F172A;--text-secondary:#475569;--text-muted:#94A3B8;--border:rgba(0,0,0,0.07);--shadow-card:0 4px 20px rgba(148,163,184,0.18);--gradient-background:linear-gradient(160deg,#EEF2FF 0%,#E8EDF8 50%,#F3EEFF 100%);}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--gradient-background);background-attachment:fixed;color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;font-weight:400;line-height:1.6;}
+h1,h2,h3,h4,h5,h6,.logo-text,#player-title,.channel-number{font-family:'Outfit',sans-serif;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 10%,rgba(124,58,237,0.07) 0%,transparent 55%),radial-gradient(ellipse at 90% 90%,rgba(6,182,212,0.05) 0%,transparent 55%),radial-gradient(ellipse at 50% 0%,rgba(219,39,119,0.04) 0%,transparent 45%);pointer-events:none;z-index:0;}
+
+/* HEADER */
+header{background:rgba(6,9,20,0.85);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 0 rgba(255,255,255,0.03),0 4px 24px rgba(0,0,0,0.3);}
+[data-theme="light"] header{background:rgba(238,242,255,0.88);}
+.header-content{display:flex;justify-content:space-between;align-items:center;padding:0.8rem 2rem;}
+.header-left{display:flex;align-items:center;gap:1.1rem;}
+.header-controls{display:flex;align-items:center;gap:0.65rem;}
+.logo-icon{font-size:1.6rem;filter:drop-shadow(0 0 8px rgba(124,58,237,0.55));}
+.logo-text{background:linear-gradient(130deg,#C4B5FD 0%,#818CF8 40%,#C084FC 70%,#F0ABFC 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800;font-size:1.6rem;letter-spacing:-0.5px;animation:gradient-shift 6s ease infinite;}
+@keyframes gradient-shift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+
+/* KQZEROSON BRAND BADGE */
+.kq-brand{display:inline-flex;align-items:center;gap:0.42rem;padding:0.38rem 0.95rem;border-radius:var(--radius-pill);font-size:0.8rem;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:0.15px;white-space:nowrap;background:linear-gradient(130deg,#C4B5FD 0%,#F0ABFC 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border:1px solid rgba(167,139,250,0.35);box-shadow:inset 0 0 0 100vw rgba(124,58,237,0.1);}
+.kq-brand-icon{background:linear-gradient(130deg,#C4B5FD 0%,#F0ABFC 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:0.8rem;}
+
+.theme-btn{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text-secondary);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);font-size:0.85rem;}
+.theme-btn:hover{background:rgba(124,58,237,0.15);border-color:var(--primary);color:var(--primary-light);transform:scale(1.08);}
+.voice-btn{background:var(--gradient-primary);border:none;border-radius:50%;width:38px;height:38px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.9rem;transition:var(--transition);box-shadow:0 4px 14px rgba(124,58,237,0.4);}
+.voice-btn:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(124,58,237,0.6);}
+.voice-btn.listening{background:linear-gradient(135deg,#ef4444,#dc2626);animation:pulse-recording 1s ease-in-out infinite;}
+.voice-btn.processing{background:linear-gradient(135deg,#f59e0b,#d97706);animation:spin 1s linear infinite;}
+@keyframes pulse-recording{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.6);}50%{box-shadow:0 0 0 10px rgba(239,68,68,0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+.connection-status{display:flex;align-items:center;gap:0.45rem;font-size:0.78rem;padding:0.35rem 0.85rem;border-radius:var(--radius-pill);border:1px solid var(--border);background:rgba(255,255,255,0.04);white-space:nowrap;font-weight:500;}
+.connection-status.connected{color:#10b981;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.08);}
+.connection-status.error{color:#ef4444;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);}
+.connection-status.connecting{color:#f59e0b;border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.08);}
+.connection-status.connected .fa-circle{animation:live-pulse 2s ease-in-out infinite;}
+@keyframes live-pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+.live-user-count{display:flex;align-items:center;gap:0.4rem;background:rgba(124,58,237,0.1);color:var(--primary-light);padding:0.35rem 0.85rem;border-radius:var(--radius-pill);font-size:0.82rem;font-weight:600;border:1px solid rgba(124,58,237,0.22);transition:var(--transition);}
+.live-user-count:hover{background:rgba(124,58,237,0.18);}
+#user-count-number{font-size:0.95rem;font-weight:700;color:#C4B5FD;}
+#user-count-label{font-size:0.74rem;opacity:0.8;}
+.live-user-count.updated{animation:count-update 0.45s ease-out;}
+@keyframes count-update{50%{transform:scale(1.07);}}
+.download-btn{display:flex;align-items:center;justify-content:center;background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.22);padding:0.35rem 0.85rem;border-radius:var(--radius-pill);font-size:0.82rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+.download-btn:hover{background:rgba(16,185,129,0.22);}
+
+/* MAIN */
+#main-content{flex:1;padding:1.5rem 2rem;overflow-y:auto;padding-bottom:calc(var(--player-height) + 2rem);position:relative;z-index:1;}
+
+/* SEARCH */
+#search-container{margin-bottom:1.5rem;}
+.search-controls{display:flex;flex-direction:column;gap:0.8rem;max-width:860px;margin:0 auto;}
+.search-box{position:relative;display:flex;align-items:center;}
+.search-box i.fa-search{position:absolute;left:1.1rem;color:var(--text-muted);z-index:1;font-size:0.88rem;}
+.search-box:focus-within i.fa-search{color:var(--primary-light);}
+#search-input{width:100%;padding:0.85rem 1rem 0.85rem 2.75rem;padding-right:3rem;background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-pill);color:var(--text-primary);font-size:0.93rem;transition:var(--transition);}
+#search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(124,58,237,0.12);background:var(--bg-card-hover);}
+#search-input::placeholder{color:var(--text-muted);}
+#clear-search{position:absolute;right:1rem;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.4rem;border-radius:50%;transition:var(--transition);opacity:0;pointer-events:none;}
+#clear-search:hover{color:var(--primary-light);}
+.filter-controls{display:flex;gap:0.65rem;align-items:center;flex-wrap:wrap;}
+.filter-select{background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-pill);color:var(--text-primary);padding:0.55rem 1.1rem;font-size:0.85rem;cursor:pointer;transition:var(--transition);min-width:138px;}
+.filter-select:focus{outline:none;border-color:var(--primary);}
+.filter-select:hover{border-color:rgba(124,58,237,0.5);box-shadow:0 0 0 2px rgba(124,58,237,0.1);}
+.filter-select option{background:#1A2035;color:var(--text-primary);}
+.favorite-btn{background:rgba(59,130,246,0.1);border:1.5px solid rgba(59,130,246,0.22);color:#60A5FA;padding:0.55rem 1.15rem;border-radius:var(--radius-pill);cursor:pointer;display:flex;align-items:center;gap:0.45rem;font-weight:500;font-size:0.85rem;transition:var(--transition);}
+.favorite-btn:hover,.favorite-btn.active{background:rgba(59,130,246,0.22);border-color:#3B82F6;color:#93C5FD;transform:translateY(-1px);}
+.hot-btn{background:rgba(249,115,22,0.1);border:1.5px solid rgba(249,115,22,0.22);color:#FB923C;padding:0.55rem 1.15rem;border-radius:var(--radius-pill);cursor:pointer;display:flex;align-items:center;gap:0.45rem;font-weight:500;font-size:0.85rem;transition:var(--transition);}
+.hot-btn:hover,.hot-btn.active{background:rgba(249,115,22,0.22);border-color:#F97316;color:#FDBA74;transform:translateY(-1px);}
+.hot-ranking-badge{position:absolute;top:0.7rem;left:0.7rem;background:linear-gradient(135deg,#ff6b35,#f7931e);color:white;padding:0.22rem 0.5rem;border-radius:8px;font-size:0.68rem;font-weight:700;display:flex;align-items:center;gap:0.2rem;box-shadow:0 2px 8px rgba(255,107,53,0.4);z-index:2;}
+.search-stats{text-align:center;color:var(--text-muted);font-size:0.82rem;padding:0.3rem 0;}
+
+/* CHANNEL GRID */
+.channel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:1.1rem;padding:0.25rem 0;contain:layout style;}
+.channel-card{background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-card);padding:1.4rem 1rem 1.1rem;text-align:center;cursor:pointer;transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.22s ease,border-color 0.22s ease,background 0.22s ease;position:relative;overflow:hidden;box-shadow:var(--shadow-card);content-visibility:auto;contain-intrinsic-size:0 220px;--genre-color:#7C3AED;}
+.channel-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gradient-primary);opacity:0;transition:opacity 0.22s ease;}
+.channel-card:hover::before{opacity:0.6;}
+.channel-card.playing::before{opacity:1;}
+.channel-card:hover{background:var(--bg-card-hover);border-color:var(--genre-color,rgba(124,58,237,0.3));transform:translateY(-5px) scale(1.015);box-shadow:var(--shadow-hover);}
+.channel-card:hover img{transform:scale(1.07);}
+.channel-card.active{background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.4);}
+.channel-card.playing{background:rgba(124,58,237,0.1);border-color:var(--primary);box-shadow:0 0 0 2px var(--primary),0 8px 32px var(--primary-glow),0 16px 48px rgba(0,0,0,0.4);}
+.channel-card.playing::after{content:'';position:absolute;inset:-2px;border-radius:20px;background:var(--gradient-primary);z-index:-1;animation:playing-ring 2.2s ease-in-out infinite;}
+@keyframes playing-ring{0%,100%{opacity:0.35;}50%{opacity:0.7;}}
+.channel-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--genre-color,var(--primary));opacity:0;border-radius:0 0 var(--radius-card) var(--radius-card);transition:opacity 0.25s ease;}
+.channel-card.playing::after{opacity:0!important;}
+.channel-card:hover::after{opacity:0.75;}
+.channel-card.favorite::after{opacity:0.5;}
+.channel-card.loading::after{content:'';position:absolute;inset:0;border-radius:var(--radius-card);background:linear-gradient(90deg,transparent 0%,rgba(124,58,237,0.12) 50%,transparent 100%);animation:card-shimmer 1s ease-in-out infinite;z-index:5;opacity:1!important;}
+@keyframes card-shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.channel-number{position:absolute;top:0.7rem;right:0.7rem;background:rgba(245,158,11,0.12);color:#FBBF24;border:1px solid rgba(245,158,11,0.28);padding:0.18rem 0.5rem;border-radius:8px;font-size:0.7rem;font-weight:700;font-family:'Outfit',sans-serif;}
+.channel-number.on-demand{background:rgba(239,68,68,0.12);color:#F87171;border-color:rgba(239,68,68,0.28);}
+.on-demand-badge{position:absolute;top:0.7rem;left:0.7rem;background:rgba(239,68,68,0.12);color:#F87171;border:1px solid rgba(239,68,68,0.28);padding:0.18rem 0.48rem;border-radius:8px;font-size:0.66rem;font-weight:600;display:flex;align-items:center;gap:0.22rem;z-index:2;}
+.channel-favorite{position:absolute;top:0.7rem;left:0.7rem;background:rgba(124,58,237,0.14);color:var(--primary-light);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.68rem;opacity:0;transition:var(--transition);}
+.channel-card.favorite .channel-favorite{opacity:1;}
+.channel-card img{width:84px;height:84px;border-radius:14px;margin-bottom:0.8rem;object-fit:cover;transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 6px 20px rgba(0,0,0,0.35);}
+.channel-card p{font-size:0.88rem;font-weight:600;line-height:1.3;color:var(--text-primary);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.channel-genre{font-size:0.72rem;color:var(--text-muted);margin-top:0.28rem;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-playing-indicator{display:none;align-items:flex-end;justify-content:center;gap:2px;height:14px;margin-top:0.4rem;}
+.channel-card.playing .card-playing-indicator{display:flex;}
+.card-playing-indicator span{display:block;width:3px;border-radius:2px;background:var(--primary-light);animation:card-bar 0.75s ease-in-out infinite;}
+.card-playing-indicator span:nth-child(1){height:6px;animation-delay:0s;}
+.card-playing-indicator span:nth-child(2){height:12px;animation-delay:0.1s;}
+.card-playing-indicator span:nth-child(3){height:8px;animation-delay:0.2s;}
+.card-playing-indicator span:nth-child(4){height:14px;animation-delay:0.15s;}
+.card-playing-indicator span:nth-child(5){height:6px;animation-delay:0.05s;}
+@keyframes card-bar{0%,100%{transform:scaleY(0.4);}50%{transform:scaleY(1);}}
+@keyframes card-enter{from{opacity:0;transform:translateY(18px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.channel-card.animate-in{animation:card-enter 0.38s cubic-bezier(0.34,1.56,0.64,1) both;}
+.channel-card.skeleton{pointer-events:none;cursor:default;}
+.channel-card.skeleton img,.channel-card.skeleton p,.channel-card.skeleton .channel-genre,.channel-card.skeleton .channel-number{visibility:hidden;}
+.channel-card.skeleton::before{content:'';position:absolute;inset:0;border-radius:var(--radius-card);background:linear-gradient(90deg,transparent 0%,rgba(124,58,237,0.08) 40%,rgba(124,58,237,0.15) 50%,rgba(124,58,237,0.08) 60%,transparent 100%);background-size:200% 100%;animation:skeleton-wave 1.6s ease-in-out infinite;opacity:1!important;}
+@keyframes skeleton-wave{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.recently-played-badge{position:absolute;bottom:0.6rem;right:0.6rem;background:rgba(16,185,129,0.14);color:#34d399;border:1px solid rgba(16,185,129,0.3);padding:0.14rem 0.42rem;border-radius:6px;font-size:0.6rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;z-index:2;display:flex;align-items:center;gap:0.2rem;}
+
+/* PLAYER BAR */
+#player{background:var(--bg-player);backdrop-filter:blur(36px) saturate(200%);-webkit-backdrop-filter:blur(36px) saturate(200%);border-top:1px solid rgba(255,255,255,0.06);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;z-index:200;height:var(--player-height);box-shadow:0 -8px 48px rgba(0,0,0,0.55),0 -1px 0 rgba(255,255,255,0.04);}
+[data-theme="light"] #player{background:rgba(248,250,255,0.96);border-top-color:rgba(0,0,0,0.08);}
+#player::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gradient-primary);opacity:0;transition:opacity 0.4s ease;}
+#player.has-track::before{opacity:1;}
+
+/* FULLSCREEN */
+#player.fullscreen,#player.simulated-fullscreen{position:fixed!important;inset:0;width:100vw;height:100vh;z-index:9999;background:#06091A;backdrop-filter:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;cursor:default;animation:fullscreen-enter 0.32s cubic-bezier(0.25,0.46,0.45,0.94);overflow:hidden;text-align:center;}
+@keyframes fullscreen-enter{from{opacity:0;transform:scale(0.97);}to{opacity:1;transform:scale(1);}}
+#player.fullscreen::after,#player.simulated-fullscreen::after{content:'';position:absolute;inset:-20px;background-image:var(--fs-bg-image,none);background-size:cover;background-position:center;filter:blur(64px) saturate(200%) brightness(0.25);z-index:-1;transition:background-image 0.5s ease;}
+#player.fullscreen .fs-overlay,#player.simulated-fullscreen .fs-overlay{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(6,9,20,0.35) 0%,rgba(6,9,20,0.88) 100%);z-index:0;pointer-events:none;}
+#player.fullscreen>*,#player.simulated-fullscreen>*{position:relative;z-index:1;}
+#player.fullscreen #player-info,#player.simulated-fullscreen #player-info{flex-direction:column;text-align:center;gap:1.25rem;max-width:500px;margin:0 auto 2rem;display:flex;align-items:center;justify-content:center;width:100%;}
+#player.fullscreen #player-logo,#player.simulated-fullscreen #player-logo{width:min(55vw,280px);height:min(55vw,280px);border-radius:24px;box-shadow:0 28px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.08);margin:0 auto 0.5rem;display:block;animation:fs-art-enter 0.45s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes fs-art-enter{from{transform:scale(0.82);opacity:0;}to{transform:scale(1);opacity:1;}}
+#player.fullscreen #player-text,#player.simulated-fullscreen #player-text{text-align:center;max-width:600px;width:100%;}
+#player.fullscreen #channel-title,#player.simulated-fullscreen #channel-title{font-size:clamp(0.72rem,2.5vw,0.95rem);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:2px;opacity:0.55;color:var(--primary-light);}
+#player.fullscreen #player-title,#player.simulated-fullscreen #player-title{font-size:clamp(1.6rem,5vw,2.8rem);font-weight:900;margin:0.4rem 0;line-height:1.15;background:linear-gradient(135deg,#F8FAFC 0%,#CBD5E1 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:fs-title-in 0.45s ease;padding:0 0.5rem;word-wrap:break-word;}
+@keyframes fs-title-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+#player.fullscreen #player-artist,#player.simulated-fullscreen #player-artist{font-size:clamp(1rem,3.5vw,1.6rem);font-weight:400;color:rgba(203,213,225,0.8);margin-bottom:1rem;word-wrap:break-word;}
+#player.fullscreen #player-controls,#player.simulated-fullscreen #player-controls{display:flex!important;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;gap:clamp(1rem,4vw,2rem);margin:1.5rem auto 0;width:100%;max-width:700px;}
+#player.fullscreen .control-btn,#player.simulated-fullscreen .control-btn{width:clamp(48px,9vw,64px);height:clamp(48px,9vw,64px);font-size:clamp(1.1rem,2.2vw,1.6rem);background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.14);backdrop-filter:blur(20px);min-width:44px;min-height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:50%;color:rgba(255,255,255,0.8);}
+#player.fullscreen #play-pause-btn,#player.simulated-fullscreen #play-pause-btn{width:clamp(64px,13vw,90px);height:clamp(64px,13vw,90px);font-size:clamp(1.6rem,3vw,2.2rem);background:linear-gradient(135deg,#fff 0%,#e2e8f0 100%);color:#06091A;border:none;box-shadow:0 8px 36px rgba(0,0,0,0.45),0 0 0 8px rgba(255,255,255,0.07);min-width:60px;min-height:60px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:50%;order:0;}
+#player.fullscreen #favorite-current,#player.simulated-fullscreen #favorite-current{order:-2;}
+#player.fullscreen #prev-channel,#player.simulated-fullscreen #prev-channel{order:-1;}
+#player.fullscreen #play-pause-btn,#player.simulated-fullscreen #play-pause-btn{order:0;}
+#player.fullscreen #next-channel,#player.simulated-fullscreen #next-channel{order:1;}
+#player.fullscreen #share-track,#player.simulated-fullscreen #share-track{order:2;}
+#player.fullscreen #volume-control,#player.simulated-fullscreen #volume-control{display:flex!important;flex-direction:row;gap:1rem;align-items:center;justify-content:center;margin:1.25rem auto 0;width:100%;max-width:500px;}
+#player.fullscreen #volume-slider,#player.simulated-fullscreen #volume-slider{width:clamp(180px,40vw,280px);height:4px;background:rgba(255,255,255,0.18);border-radius:2px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;}
+#player.fullscreen #volume-value,#player.simulated-fullscreen #volume-value{display:block!important;font-size:0.88rem;font-weight:600;color:rgba(255,255,255,0.55);min-width:40px;text-align:center;}
+
+/* PLAYER INFO */
+#player-info{display:flex;align-items:center;gap:1rem;flex:1;min-width:0;}
+.album-art-container{position:relative;flex-shrink:0;}
+#player-logo{width:66px;height:66px;border-radius:12px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 20px rgba(0,0,0,0.45);transition:opacity 0.3s ease,transform 0.3s ease;}
+#player-logo.fade-out{opacity:0;transform:scale(0.94);}
+#player-logo.fade-in{opacity:1;transform:scale(1);}
+.album-art-container:hover #player-logo{box-shadow:0 0 0 2px var(--primary),0 8px 28px rgba(124,58,237,0.45);transform:scale(1.05);cursor:pointer;}
+.playing-animation{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);display:none;gap:2px;}
+.playing-animation.active{display:flex;}
+.playing-animation .bar{width:3px;height:10px;background:var(--primary-light);border-radius:2px;animation:audio-bars 0.8s ease-in-out infinite;}
+.playing-animation .bar:nth-child(2){animation-delay:0.15s;}
+.playing-animation .bar:nth-child(3){animation-delay:0.3s;}
+.playing-animation .bar:nth-child(4){animation-delay:0.1s;}
+@keyframes audio-bars{0%,100%{height:6px;}50%{height:18px;}}
+#player-text{display:flex;flex-direction:column;min-width:0;flex:1;gap:0.08rem;}
+#channel-title{font-size:0.7rem;color:var(--primary-light);font-weight:600;text-transform:uppercase;letter-spacing:0.9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#player-title{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary);transition:opacity 0.3s ease;}
+#player-artist{font-size:0.83rem;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity 0.3s ease;}
+.track-progress{margin-top:0.3rem;display:flex;align-items:center;gap:0.5rem;}
+.progress-bar{flex:1;height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--gradient-primary);width:0%;transition:width 0.1s linear;}
+#track-time{font-size:0.7rem;color:var(--text-muted);min-width:28px;font-weight:500;}
+.player-text-marquee{overflow:hidden;white-space:nowrap;max-width:100%;position:relative;}
+.player-text-marquee.overflowing span{display:inline-block;animation:marquee-scroll 14s linear infinite;padding-right:3rem;}
+@keyframes marquee-scroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* PLAYER CONTROLS */
+#player-controls{display:flex;align-items:center;gap:0.45rem;}
+.control-btn{background:transparent;color:var(--text-muted);border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition);font-size:0.9rem;}
+.control-btn:hover:not(:disabled){color:var(--text-primary);background:rgba(255,255,255,0.06);transform:scale(1.1);}
+.control-btn:disabled{opacity:0.28;cursor:not-allowed;}
+.control-btn.active{color:var(--primary-light);}
+#play-pause-btn{background:var(--gradient-primary);color:white;border:none;width:50px;height:50px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all 0.22s cubic-bezier(0.34,1.56,0.64,1);flex-shrink:0;box-shadow:0 4px 18px rgba(124,58,237,0.45);}
+#play-pause-btn:hover:not(:disabled){transform:scale(1.1);box-shadow:0 6px 24px rgba(124,58,237,0.65);}
+#play-pause-btn:active:not(:disabled){transform:scale(0.94);}
+#play-pause-btn:disabled{background:rgba(255,255,255,0.08);cursor:not-allowed;opacity:0.45;box-shadow:none;}
+#volume-control{display:flex;align-items:center;gap:0.45rem;}
+.volume-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.88rem;transition:var(--transition);padding:0.25rem;}
+.volume-btn:hover{color:var(--text-primary);}
+#volume-slider{width:88px;height:4px;background:linear-gradient(to right,#8b5cf6 80%,rgba(255,255,255,0.12) 80%);border-radius:2px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:var(--transition);}
+#volume-slider:hover{height:5px;}
+#volume-slider::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:white;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.3);}
+#volume-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:white;cursor:pointer;border:none;box-shadow:0 2px 6px rgba(0,0,0,0.3);}
+#volume-value{font-size:0.73rem;color:var(--text-muted);min-width:32px;font-weight:500;}
+
+/* MINI PLAYER */
+.mini-player{position:fixed;bottom:20px;right:20px;background:rgba(17,24,39,0.96);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.07);border-radius:18px;box-shadow:0 16px 48px rgba(0,0,0,0.55);z-index:200;max-width:340px;transition:var(--transition);cursor:pointer;opacity:0;transform:translateY(100px);}
+.mini-player.show{opacity:1;transform:translateY(0);}
+.mini-player:hover{transform:translateY(-2px);box-shadow:0 20px 56px rgba(0,0,0,0.55),0 0 0 1px rgba(124,58,237,0.28);border-color:rgba(124,58,237,0.28);}
+.mini-player-content{display:flex;align-items:center;gap:0.85rem;padding:0.85rem;}
+.mini-logo{width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0;}
+.mini-player-info{display:flex;flex-direction:column;min-width:0;flex:1;gap:0.08rem;}
+#mini-player-title{font-size:0.875rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#mini-player-artist{font-size:0.76rem;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-player-controls{display:flex;align-items:center;gap:0.5rem;flex-shrink:0;}
+.mini-control-btn{background:var(--gradient-primary);color:white;border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.88rem;transition:var(--transition);}
+.mini-control-btn:hover:not(:disabled){transform:scale(1.1);}
+.mini-control-btn:disabled{background:rgba(255,255,255,0.08);cursor:not-allowed;opacity:0.45;}
+.mini-volume-control{display:flex;align-items:center;gap:0.4rem;}
+.mini-volume-btn{background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.82rem;transition:var(--transition);padding:0.2rem;}
+.mini-volume-btn:hover{color:var(--primary-light);}
+.mini-volume-slider{width:56px;height:3px;background:rgba(255,255,255,0.12);border-radius:2px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;}
+.mini-volume-slider::-webkit-slider-thumb{appearance:none;width:11px;height:11px;border-radius:50%;background:white;cursor:pointer;}
+
+/* TOAST */
+.toast-container{position:fixed;top:70px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:0.5rem;}
+.toast{background:rgba(17,24,39,0.96);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:0.85rem 1.2rem;color:var(--text-primary);box-shadow:0 8px 28px rgba(0,0,0,0.45);transform:translateX(320px);opacity:0;transition:var(--transition);max-width:280px;font-size:0.875rem;}
+.toast.show{transform:translateX(0);opacity:1;}
+.toast.success{border-left:3px solid #10b981;}
+.toast.error{border-left:3px solid #ef4444;}
+.toast.info{border-left:3px solid var(--primary-light);}
+
+/* LOADING & ERROR */
+.loading-container{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1.5rem;}
+.loading-spinner{width:52px;height:52px;border:3px solid rgba(124,58,237,0.14);border-top:3px solid var(--primary);border-left:3px solid var(--primary);border-radius:50%;animation:spin 0.75s linear infinite;box-shadow:0 0 20px rgba(124,58,237,0.18);}
+.error-container{display:flex;align-items:center;justify-content:center;min-height:60vh;}
+.error-content{text-align:center;background:var(--bg-card);border:1.5px solid rgba(239,68,68,0.2);border-radius:var(--radius-card);padding:3rem;max-width:400px;box-shadow:var(--shadow-card);}
+.error-content i{font-size:3rem;color:#ef4444;margin-bottom:1.25rem;}
+.error-content h2{margin-bottom:0.75rem;color:#ef4444;font-weight:700;}
+.error-content p{margin-bottom:1.75rem;color:var(--text-secondary);line-height:1.6;}
+.retry-btn{background:var(--gradient-primary);color:white;border:none;padding:0.875rem 2rem;border-radius:var(--radius-pill);font-size:0.95rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:0.5rem;margin:0 auto;transition:var(--transition);box-shadow:0 4px 16px rgba(124,58,237,0.4);}
+.retry-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,0.5);}
+.no-results{text-align:center;padding:4rem 2rem;color:var(--text-secondary);}
+.no-results h2{color:var(--primary-light);margin-bottom:0.75rem;font-weight:700;}
+
+/* ACCESSIBILITY */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.skip-link{position:absolute;top:-40px;left:6px;background:var(--primary);color:white;padding:8px 16px;border-radius:4px;text-decoration:none;z-index:1000;transition:top 0.3s;}
+.skip-link:focus{top:6px;}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--primary-light);outline-offset:2px;}
+button[aria-pressed="true"]{background:var(--primary);color:white;}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.35);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(124,58,237,0.6);}
+
+/* CAR MODE */
+body.car-mode{overflow:hidden;}
+body.car-mode header{padding:10px;background:#000;border-bottom:2px solid #222;}
+body.car-mode #search-container,body.car-mode #channel-container,body.car-mode .live-user-count,body.car-mode #volume-control,body.car-mode #download-track-btn,body.car-mode #share-track{display:none!important;}
+body.car-mode #player{inset:0!important;height:100vh!important;padding:20px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;position:fixed!important;}
+body.car-mode #player-info{flex-direction:column!important;align-items:center!important;gap:24px!important;margin-bottom:40px!important;}
+body.car-mode .album-art-container{width:280px!important;height:280px!important;margin:0 auto!important;}
+body.car-mode #player-logo{width:100%!important;height:100%!important;border-radius:20px!important;}
+body.car-mode #player-text{text-align:center!important;align-items:center!important;}
+body.car-mode #player-title{font-size:2.2rem!important;margin-bottom:8px!important;}
+body.car-mode #player-artist{font-size:1.6rem!important;}
+body.car-mode #channel-title{font-size:1.2rem!important;}
+body.car-mode #player-controls{justify-content:center!important;gap:36px!important;}
+body.car-mode .control-btn,body.car-mode #play-pause-btn{width:90px!important;height:90px!important;font-size:2.2rem!important;border-radius:50%!important;}
+
+/* PWA MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.modal-content.pwa-install-modal{background:rgba(17,24,39,0.98);color:var(--text-primary);padding:2rem;border-radius:20px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.07);text-align:center;}
+
+/* RESPONSIVE */
+@media(max-width:968px){.channel-grid{grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:0.9rem;}.header-content{padding:0.7rem 1.25rem;}}
+@media(max-width:768px){.header-content{padding:0.7rem 1rem;flex-direction:column;gap:0.55rem;text-align:center;}#main-content{padding:1rem;padding-bottom:calc(var(--player-height) + 1rem);}.channel-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.8rem;}#player{padding:0 1rem;height:76px;}#player-logo{width:48px;height:48px;}#channel-title{font-size:0.63rem;}#player-title{font-size:0.88rem;}#player-artist{font-size:0.76rem;}.track-progress{display:none;}#player-controls{gap:0.22rem;}.control-btn{width:32px;height:32px;font-size:0.8rem;}#play-pause-btn{width:44px;height:44px;font-size:1rem;}#volume-slider{width:60px;}#volume-value{display:none;}#share-track{display:none;}.mini-player{bottom:10px;right:10px;left:10px;max-width:none;}.kq-brand{display:none;}}
+@media(max-width:480px){.channel-grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:0.7rem;}.channel-card{padding:1.1rem 0.75rem 1rem;}.channel-card img{width:68px;height:68px;}.filter-controls{flex-direction:column;align-items:stretch;}.filter-select{min-width:unset;}#main-content{padding:0.75rem;padding-bottom:calc(var(--player-height) + 0.75rem);}#player{height:68px;}#player-logo{width:42px;height:42px;}#play-pause-btn{width:40px;height:40px;font-size:0.9rem;}.control-btn{width:28px;height:28px;font-size:0.75rem;}.mini-volume-control{display:none;}}
+    </style>
+</head>
+
+<body role="application">
+    <header role="banner">
+        <div class="header-content" style="touch-action:none;">
+            <div class="header-left">
+                <h1><span class="logo-icon" aria-hidden="true">🎵</span> <span class="logo-text">StreamLux Pro</span></h1>
+                <div id="live-user-count" class="live-user-count" role="status" aria-live="polite">
+                    <i class="fas fa-headphones" aria-hidden="true"></i>
+                    <span id="user-count-number">0</span>
+                    <span id="user-count-label">listeners</span>
+                    <span class="sr-only">currently listening</span>
+                </div>
+                <button id="download-track-btn" class="download-btn" style="display:none;" aria-label="Download current track" title="Download Track">
+                    <i class="fas fa-download" aria-hidden="true"></i>
+                    <span class="sr-only">Download Track</span>
+                </button>
+            </div>
+            <div class="header-controls">
+                <!-- ✦ Kqzeroson Brand Badge — Top Right ✦ -->
+                <span class="kq-brand" title="Kqzeroson's SiriusXM WebPlayer">
+                    <i class="fas fa-satellite-dish kq-brand-icon" aria-hidden="true"></i>
+                    Kqzeroson's SiriusXM WebPlayer
+                </span>
+                <button id="voice-control-btn" class="voice-btn" aria-label="Voice Control" title="Voice Control - Say channel number or name">
+                    <i class="fas fa-microphone" aria-hidden="true"></i>
+                    <span class="sr-only">Voice Control</span>
+                </button>
+                <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark and Light Mode" title="Toggle Dark/Light Mode">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                    <span class="sr-only">Toggle Theme</span>
+                </button>
+                <button id="car-mode-toggle" class="car-mode-btn theme-btn" aria-label="Toggle Car Mode" title="Toggle Car Mode">
+                    <i class="fas fa-car" aria-hidden="true"></i>
+                    <span class="sr-only">Toggle Car Mode</span>
+                </button>
+                <button id="install-pwa-btn" class="theme-btn" aria-label="Install App" title="Install App" style="display:none;">
+                    <i class="fas fa-download" aria-hidden="true"></i>
+                    <span class="sr-only">Install App</span>
+                </button>
+                <div id="connection-status" class="connection-status connecting" role="status" aria-live="polite" aria-label="Connection status">
+                    <i class="fas fa-circle" aria-hidden="true"></i>
+                    <span>Connecting...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" role="main">
+        <div id="search-container" style="display:none;">
+            <div class="search-controls" role="search" aria-label="Channel search and filters">
+                <div class="search-box">
+                    <label for="search-input" class="sr-only">Search channels by name, number, or genre</label>
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <input type="text" id="search-input" placeholder="Search channels..." autocomplete="off" aria-describedby="search-results-count" role="searchbox">
+                    <button id="clear-search" aria-label="Clear search" title="Clear search"><i class="fas fa-times" aria-hidden="true"></i></button>
+                </div>
+                <div class="filter-controls" role="group" aria-label="Channel filters">
+                    <label for="genre-filter" class="sr-only">Filter by genre</label>
+                    <select id="genre-filter" class="filter-select" aria-label="Filter by genre"><option value="">All Genres</option></select>
+                    <label for="sort-select" class="sr-only">Sort channels</label>
+                    <select id="sort-select" class="filter-select" aria-label="Sort channels">
+                        <option value="smart">Smart Sort</option>
+                        <option value="popularity">By Popularity</option>
+                        <option value="number">By Number</option>
+                        <option value="name">By Name</option>
+                        <option value="genre">By Genre</option>
+                    </select>
+                    <button id="favorites-toggle" class="favorite-btn" aria-label="Toggle favorites filter" aria-pressed="false" title="Show Favorites">
+                        <i class="fas fa-heart" aria-hidden="true"></i><span>Favorites</span>
+                    </button>
+                    <button id="whats-hot-toggle" class="hot-btn" aria-label="Toggle what's hot filter" aria-pressed="false" title="Show What's Hot Today">
+                        <i class="fas fa-fire" aria-hidden="true"></i><span>Hot</span>
+                    </button>
+                </div>
+            </div>
+            <div class="search-stats" style="display:none;" role="status" aria-live="polite">
+                <span id="search-results-count">0 channels found</span>
+            </div>
+        </div>
+
+        <div id="loading" class="loading-container" role="status" aria-live="polite" aria-label="Loading channels">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <h2>Loading Channels...</h2>
+            <p>Fetching channel data from SiriusXM</p>
+        </div>
+
+        <div id="error-container" class="error-container" style="display:none;" role="alert">
+            <div class="error-content">
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                <h2>Connection Error</h2>
+                <p id="error-message">Unable to connect to SiriusXM services</p>
+                <button id="retry-btn" class="retry-btn" aria-label="Retry connection">
+                    <i class="fas fa-redo" aria-hidden="true"></i>Try Again
+                </button>
+            </div>
+        </div>
+
+        <div id="channel-container" style="display:none;" role="region" aria-label="Available channels" aria-live="polite"></div>
+    </main>
+
+    <footer id="player" role="region" aria-label="Audio player controls" title="Click to toggle fullscreen">
+        <div class="fs-overlay" aria-hidden="true"></div>
+        <div id="player-info" role="group" aria-label="Now playing information">
+            <div class="album-art-container">
+                <img id="player-logo" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiByeD0iOCIgZmlsbD0iIzMzMzMzMyIvPgo8dGV4dCB4PSI0MCIgeT0iNDUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNYTTwvdGV4dD4KPHN2Zz4K" alt="Channel artwork">
+                <div class="playing-animation" aria-hidden="true">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+            </div>
+            <div id="player-text" role="group" aria-label="Track information">
+                <span id="channel-title" aria-label="Channel name">No Channel Selected</span>
+                <span id="player-title" aria-label="Song title">Select a channel to play</span>
+                <span id="player-artist" aria-label="Artist name"></span>
+                <div class="track-progress" role="group" aria-label="Playback progress">
+                    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Live stream progress">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <span id="track-time" aria-label="Stream status">LIVE</span>
+                </div>
+            </div>
+        </div>
+        <div id="player-controls" role="group" aria-label="Player controls">
+            <button id="favorite-current" class="control-btn" aria-label="Add current channel to favorites" aria-pressed="false" title="Add to Favorites" disabled>
+                <i class="far fa-heart" aria-hidden="true"></i><span class="sr-only">Add to favorites</span>
+            </button>
+            <button id="prev-channel" class="control-btn" aria-label="Previous channel" title="Previous Channel" disabled>
+                <i class="fas fa-backward-step" aria-hidden="true"></i><span class="sr-only">Previous channel</span>
+            </button>
+            <button id="play-pause-btn" aria-label="Play or pause audio" aria-pressed="false" disabled>
+                <i class="fas fa-play" aria-hidden="true"></i><span class="sr-only">Play</span>
+            </button>
+            <button id="next-channel" class="control-btn" aria-label="Next channel" title="Next Channel" disabled>
+                <i class="fas fa-forward-step" aria-hidden="true"></i><span class="sr-only">Next channel</span>
+            </button>
+            <button id="share-track" class="control-btn" aria-label="Share current track" title="Share Track" disabled>
+                <i class="fas fa-share-nodes" aria-hidden="true"></i><span class="sr-only">Share track</span>
+            </button>
+            <div id="volume-control" role="group" aria-label="Volume controls">
+                <button id="mute-btn" class="volume-btn" aria-label="Mute or unmute audio" aria-pressed="false">
+                    <i class="fas fa-volume-high" aria-hidden="true"></i><span class="sr-only">Mute</span>
+                </button>
+                <label for="volume-slider" class="sr-only">Volume level</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="80" aria-label="Volume level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80">
+                <span id="volume-value" aria-label="Volume percentage">80%</span>
+            </div>
+        </div>
+        <audio id="audio-player" aria-label="Audio stream" preload="auto" playsinline webkit-playsinline></audio>
+    </footer>
+
+    <div id="mini-player" class="mini-player" style="display:none;" role="region" aria-label="Compact player controls" tabindex="0" title="Click to return to full player">
+        <div class="mini-player-content">
+            <img id="mini-player-logo" src="" alt="Channel artwork" class="mini-logo">
+            <div class="mini-player-info">
+                <span id="mini-player-title">No track playing</span>
+                <span id="mini-player-artist">Select a channel</span>
+            </div>
+            <div class="mini-player-controls">
+                <button id="mini-play-pause" class="mini-control-btn" aria-label="Play or pause audio" disabled>
+                    <i class="fas fa-play"></i>
+                </button>
+                <div class="mini-volume-control">
+                    <button id="mini-mute-btn" class="mini-volume-btn" aria-label="Mute or unmute audio"><i class="fas fa-volume-high"></i></button>
+                    <input type="range" id="mini-volume-slider" min="0" max="100" value="80" aria-label="Volume level" class="mini-volume-slider">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container" role="region" aria-live="assertive" aria-label="Notifications"></div>
+
+    <div id="ios-pwa-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="ios-pwa-title">
+        <div class="modal-content pwa-install-modal">
+            <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h2 id="ios-pwa-title" style="margin:0;">Install App (iOS)</h2>
+                <button id="close-pwa-modal-btn" aria-label="Close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-primary);"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="margin-bottom:1rem;color:var(--text-secondary);">Install StreamLux Pro on your iPhone for a full-screen experience:</p>
+            <ol style="text-align:left;margin-bottom:1.5rem;padding-left:1.5rem;line-height:1.8;color:var(--text-secondary);">
+                <li>Tap the <strong style="color:var(--text-primary);">Share</strong> icon at the bottom of Safari</li>
+                <li>Tap <strong style="color:var(--text-primary);">Add to Home Screen</strong></li>
+                <li>Tap <strong style="color:var(--text-primary);">Add</strong></li>
+            </ol>
+            <button id="close-pwa-modal" style="width:100%;padding:0.875rem;border-radius:50px;font-weight:600;background:var(--gradient-primary);color:white;border:none;cursor:pointer;font-size:0.95rem;">Got it</button>
+        </div>
+    </div>
+
+    <div id="sr-announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- JS loads via our proxy at /static/* — no CORS issues -->
+    <script src="/static/js/album-art-generator.js"></script>
+    <script src="/static/js/channel-artwork.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+

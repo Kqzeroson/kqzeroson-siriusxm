@@ -1,0 +1,8 @@
+﻿{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "http://june.hidencloud.com:24709/api/$1" },
+    { "source": "/stream/(.*)", "destination": "http://june.hidencloud.com:24709/stream/$1" },
+    { "source": "/static/(.*)", "destination": "http://june.hidencloud.com:24709/static/$1" },
+    { "source": "/", "destination": "/index.html" }
+  ]
+}
